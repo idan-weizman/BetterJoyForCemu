@@ -20,6 +20,7 @@ using System.Configuration;
 using System.Net.Http;
 using System.IO;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 using System.ServiceProcess;
 
@@ -130,29 +131,6 @@ namespace BetterJoyForCemu {
                     }
 
                     // Add controller to block-list for HidGuardian
-                    if (useHIDG) {
-                        HttpWebRequest request = (HttpWebRequest)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/affected/add/");
-                        string postData = @"hwids=HID\" + enumerate.path.Split('#')[1].ToUpper();
-                        var data = Encoding.UTF8.GetBytes(postData);
-
-                        request.Method = "POST";
-                        request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
-                        request.ContentLength = data.Length;
-
-                        using (var stream = request.GetRequestStream())
-                            stream.Write(data, 0, data.Length);
-
-                        try {
-                            var response = (HttpWebResponse)request.GetResponse();
-                            var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                        } catch {
-                            form.AppendTextBox("Unable to add controller to block-list.\r\n");
-                        }
-                    } else { // Remove affected devices from list
-                        try {
-                            HttpWebResponse r1 = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/affected/purge/").GetResponse();
-                        } catch { }
-                    }
                     // -------------------- //
 
                     IntPtr handle = HIDapi.hid_open_path(enumerate.path);
@@ -329,33 +307,46 @@ namespace BetterJoyForCemu {
             pid = Process.GetCurrentProcess().Id.ToString(); // get current process id for HidCerberus.Srv
 
             if (useHIDG) {
-                try {
-                    var HidCerberusService = new ServiceController("HidCerberus Service");
-                    if (HidCerberusService.Status == ServiceControllerStatus.Stopped) {
-                        form.console.Text += "HidGuardian was stopped. Starting...\r\n";
-
-                        try {
-                            HidCerberusService.Start();
-                        } catch (Exception e) {
-                            form.console.Text += "Unable to start HidGuardian - everything should work fine without it, but if you need it, run the app again as an admin.\r\n";
-                        }
-                    }
-                } catch (Exception e) {
-                    form.console.Text += "Unable to start HidGuardian - everything should work fine without it, but if you need it, install it properly as admin.\r\n";
-                }
-
-                HttpWebResponse response;
                 if (Boolean.Parse(ConfigurationManager.AppSettings["PurgeWhitelist"])) {
                     try {
-                        response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/purge/").GetResponse(); // remove all programs allowed to see controller
-                    } catch (Exception e) {
+                        RegistryKey tempkey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\HidGuardian\Parameters\Whitelist");
+                        string[] subkeys = null;
+                        if (tempkey != null)
+                        {
+                            subkeys = tempkey.GetSubKeyNames();
+                        }
+                        else
+                        {
+                            subkeys = new string[0];
+                        }
+
+                        bool processExists = false;
+                        for (int ind = 0, arlen = subkeys.Length; ind < arlen; ind++)
+                        {
+                            processExists = true;
+                            try
+                            {
+                                Process.GetProcessById(Convert.ToInt32(subkeys[ind]));
+                            }
+                            catch { processExists = false; }
+
+                            if (!processExists)
+                            {
+                                try
+                                {
+                                    Registry.LocalMachine.DeleteSubKey(@"SYSTEM\CurrentControlSet\Services\HidGuardian\Parameters\Whitelist\" + subkeys[ind]);
+                                }
+                                catch { }
+                            }
+                        }
+                    } catch (Exception) {
                         form.console.Text += "Unable to purge whitelist.\r\n";
                     }
                 }
 
                 try {
-                    response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/add/" + pid).GetResponse(); // add BetterJoyForCemu to allowed processes 
-                } catch (Exception e) {
+                    Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Services\HidGuardian\Parameters\Whitelist\" + System.Diagnostics.Process.GetCurrentProcess().Id);
+                } catch (Exception) {
                     form.console.Text += "Unable to add program to whitelist.\r\n";
                 }
             } else {
@@ -390,9 +381,10 @@ namespace BetterJoyForCemu {
         }
 
         public static void Stop() {
-            try {
-                HttpWebResponse response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/remove/" + pid).GetResponse();
-            } catch (Exception e) {
+            try
+            {
+                Registry.LocalMachine.DeleteSubKey(@"SYSTEM\CurrentControlSet\Services\HidGuardian\Parameters\Whitelist\" + System.Diagnostics.Process.GetCurrentProcess().Id);
+            } catch (Exception) {
                 form.console.Text += "Unable to remove program from whitelist.\r\n";
             }
 

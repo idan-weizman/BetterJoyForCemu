@@ -109,7 +109,7 @@ namespace BetterJoyForCemu {
 			Array.Copy(usefulData, 0, packetData, currIdx, usefulData.Length);
 			FinishPacket(packetData);
 
-			try { udpSock.SendTo(packetData, clientEP); } catch (Exception e) { }
+			try { udpSock.SendTo(packetData, clientEP); } catch (Exception) { }
 		}
 
 		private void ProcessIncoming(byte[] localMsg, IPEndPoint clientEP) {
@@ -240,7 +240,7 @@ namespace BetterJoyForCemu {
 						}
 					}
 				}
-			} catch (Exception e) { }
+			} catch (Exception) { }
 		}
 
 		private void ReceiveCallback(IAsyncResult iar) {
@@ -254,7 +254,7 @@ namespace BetterJoyForCemu {
 
 				localMsg = new byte[msgLen];
 				Array.Copy(recvBuffer, localMsg, msgLen);
-			} catch (Exception e) { }
+			} catch (Exception) { }
 
 			//Start another receive as soon as we copied the data
 			StartReceive();
@@ -271,7 +271,7 @@ namespace BetterJoyForCemu {
 					EndPoint newClientEP = new IPEndPoint(IPAddress.Any, 0);
 					udpSock.BeginReceiveFrom(recvBuffer, 0, recvBuffer.Length, SocketFlags.None, ref newClientEP, ReceiveCallback, udpSock);
 				}
-			} catch (SocketException ex) {
+			} catch (SocketException) {
 				uint IOC_IN = 0x80000000;
 				uint IOC_VENDOR = 0x18000000;
 				uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
@@ -291,7 +291,7 @@ namespace BetterJoyForCemu {
 			}
 
 			udpSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-			try { udpSock.Bind(new IPEndPoint(ip, port)); } catch (SocketException ex) {
+			try { udpSock.Bind(new IPEndPoint(ip, port)); } catch (SocketException) {
 				udpSock.Close();
 				udpSock = null;
 
@@ -316,7 +316,7 @@ namespace BetterJoyForCemu {
 			}
 		}
 
-		bool swapButtons = Boolean.Parse(ConfigurationSettings.AppSettings["SwapButtons"]);
+		bool swapButtons = Boolean.Parse(ConfigurationManager.AppSettings["SwapButtons"]);
 		private bool ReportToBuffer(Joycon hidReport, byte[] outputData, ref int outIdx) {
 			outputData[outIdx] = 0;
 
@@ -504,7 +504,7 @@ namespace BetterJoyForCemu {
 				FinishPacket(outputData);
 
 			foreach (var cl in clientsList) {
-				try { udpSock.SendTo(outputData, cl); } catch (SocketException ex) { }
+				try { udpSock.SendTo(outputData, cl); } catch (SocketException) { }
 			}
 			clientsList.Clear();
 			clientsList = null;

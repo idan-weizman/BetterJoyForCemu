@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterJoyForCemu", "BetterJoyForCemu\BetterJoyForCemu.csproj", "{1BF709E9-C133-41DF-933A-C9FF3F664C7B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ViGEmClient", "..\..\..\Downloads\ViGEm-master\ViGEm-master\NET\ViGEmClient\ViGEmClient.csproj", "{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ViGEmClient", "..\ViGEm.NET\ViGEmClient\ViGEmClient.NET.csproj", "{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
